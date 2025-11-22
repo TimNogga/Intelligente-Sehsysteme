@@ -43,7 +43,7 @@ def binarization(gray_u8, thresholds):
 
     original = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     view = original.copy()
-    last_thresholds: list[int] = []
+    last_thresholds = []
 
     while True:
         if cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
@@ -69,7 +69,7 @@ def binarization(gray_u8, thresholds):
     return view
 
 
-def exercise1(image_folder=".", input: str = None):
+def exercise1(image_folder=".", input=None):
     try:
         image = cv2.imread(join(image_folder, input), cv2.IMREAD_GRAYSCALE)
 
@@ -84,7 +84,7 @@ def exercise1(image_folder=".", input: str = None):
     binarization(image, thresholds=None)
 
 
-def connected_component_labeling(source: np.ndarray, neighborhood: int = 8):
+def connected_component_labeling(source, neighborhood=8):
     if source.ndim == 3:
         gray = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
     else:
@@ -96,17 +96,17 @@ def connected_component_labeling(source: np.ndarray, neighborhood: int = 8):
 
     parent = [0]
 
-    def make_set() -> int:
+    def make_set():
         parent.append(len(parent))
         return len(parent) - 1
 
-    def find(label: int) -> int:
+    def find(label):
         while parent[label] != label:
             parent[label] = parent[parent[label]]
             label = parent[label]
         return label
 
-    def union(a: int, b: int) -> None:
+    def union(a, b):
         root_a, root_b = find(a), find(b)
         if root_a != root_b:
             parent[root_b] = root_a
@@ -140,7 +140,7 @@ def connected_component_labeling(source: np.ndarray, neighborhood: int = 8):
                 labels[y, x] = new_label
 
     colorized = np.full((height, width, 3), 255, dtype=np.uint8)
-    label_color: dict[int, tuple[int, int, int]] = {}
+    label_color = {}
     palette = np.array([
         [255, 0, 0],
         [0, 255, 0],
@@ -172,7 +172,7 @@ def connected_component_labeling(source: np.ndarray, neighborhood: int = 8):
     return colorized
 
 
-def exercise3(image_folder=".", threshold: np.uint8=120):
+def exercise3(image_folder=".", threshold=120):
     try:
         image = cv2.imread(join(image_folder, "Testbild_Werkzeuge_768x576.png"), cv2.IMREAD_GRAYSCALE)
     except FileNotFoundError:
