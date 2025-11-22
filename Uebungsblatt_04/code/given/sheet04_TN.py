@@ -138,10 +138,10 @@ if __name__ == "__main__":
     # --- EXERCISE 2 ---
     # ------------------
 
-    #exercise2(image_folder=source_images)
+    exercise2(image_folder=source_images)
 
     # ------------------
     # --- EXERCISE 3 ---
     # ------------------
 
-    exercise3(image_folder=source_images)
+    #exercise3(image_folder=source_images)
