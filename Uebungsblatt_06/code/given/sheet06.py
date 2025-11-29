@@ -1,5 +1,4 @@
 import argparse
-
 import cv2
 from os.path import *
 import numpy as np
@@ -14,11 +13,15 @@ def exercise1(image_folder=".", input: str = None):
         return
     
     image_clone = image.copy()
-    image_display = image.copy()
+    display_img = image.copy()
     
     points = []
     all_paths = []
-    ck = None
+    
+    image_float = image.astype(np.float64)
+    gradx = cv2.Sobel(image_float, cv2.CV_64F, 1, 0, ksize=3)
+    grady = cv2.Sobel(image_float, cv2.CV_64F, 0, 1, ksize=3)
+    g = np.sqrt(gradx**2 + grady**2)
     
     def get_neighbors(node):
         x, y = node
@@ -29,20 +32,12 @@ def exercise1(image_folder=".", input: str = None):
                 neighbors.append((nx, ny))
         return neighbors
     
-    def calculate_cost_map():
-        nonlocal ck
-        image_float = image.astype(np.float64)
-        gradx = cv2.Sobel(image_float, cv2.CV_64F, 1, 0, ksize=3)
-        grady = cv2.Sobel(image_float, cv2.CV_64F, 0, 1, ksize=3)
-        g = np.sqrt(gradx**2 + grady**2)
-        g_max = np.max(g)
-        if g_max > 0:
-            g_normalized = g / g_max
-        else:
-            g_normalized = g
-        ck = 1.0 - g_normalized + 0.001
+    def calculate_cost_map(start, end):
+        gmod = 0.5 * (g[start[1], start[0]] + g[end[1], end[0]])
+        return np.abs(g - gmod)
     
     def dijkstra(start, end):
+        ck = calculate_cost_map(start, end)
         max_cost = np.sum(ck) + 1
         pk = np.full(image.shape, max_cost)
         pk[start[1], start[0]] = ck[start[1], start[0]]
@@ -75,64 +70,40 @@ def exercise1(image_folder=".", input: str = None):
         return None
     
     def update_display():
-        display_img = cv2.cvtColor(image_display, cv2.COLOR_GRAY2BGR)
-        
+        nonlocal display_img
+        display_img = image.copy()
         for path in all_paths:
             for i in range(len(path)-1):
-                cv2.line(display_img, path[i], path[i+1], (255, 0, 0), 2)
-        
-        for i, point in enumerate(points):
-            color = (0, 255, 0) if i == 0 else (0, 0, 255) if i == len(points)-1 else (255, 0, 0)
-            cv2.circle(display_img, point, 4, color, -1)
-            cv2.putText(display_img, str(i), (point[0]+5, point[1]-5), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-        
-        cv2.imshow("Intelligent Scissors", display_img)
+                cv2.line(display_img, path[i], path[i+1], (255,0,0), 1)
+        for point in points:
+            cv2.circle(display_img, point, 3, (255,0,0), -1)
+        cv2.imshow("Image", display_img)
     
     def clicked(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
-            points.append((x, y))
+            points.append((x,y))
             
-            if len(points) == 1:
-                calculate_cost_map()
-            
-            elif len(points) >= 2:
+            if len(points) >= 2:
                 start = points[-2]
                 end = points[-1]
-                
                 path = dijkstra(start, end)
                 if path is not None:
                     all_paths.append(path)
+                    for i in range(len(path)-1):
+                        cv2.line(image_clone, path[i], path[i+1], (255,0,0), 1)
             
             update_display()
-        
-        elif event == cv2.EVENT_RBUTTONDOWN:
-            if len(points) >= 2:
-                cv2.waitKey(1000)
+
+    cv2.imshow("Image", image)
+    cv2.setMouseCallback("Image", clicked)
+    cv2.waitKey(0)  
     
-    cv2.namedWindow("Intelligent Scissors", cv2.WINDOW_NORMAL)
-    cv2.setMouseCallback("Intelligent Scissors", clicked)
+    cv2.imshow("Path", image_clone)
+    cv2.waitKey(0)
     
-    update_display()
-    
-    while True:
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-    
-    if len(all_paths) > 0:
-        final_result = cv2.cvtColor(image_clone, cv2.COLOR_GRAY2BGR)
-        for path in all_paths:
-            for i in range(len(path)-1):
-                cv2.line(final_result, path[i], path[i+1], (255, 0, 0), 2)
-        
-        for point in points:
-            cv2.circle(final_result, point, 4, (0, 255, 0), -1)
-        
-        cv2.imshow("Finale Segmentierung", final_result)
-        cv2.waitKey(0)
-        
-        cv2.imwrite("segmentierung_ergebnis.jpg", final_result)
+    output_path = join(image_folder, "result_" + input)
+    cv2.imwrite(output_path, image_clone)
+    print(f"Image saved as: {output_path}")
     
     cv2.destroyAllWindows()
 
@@ -148,7 +119,7 @@ def exercise3(image_folder="."):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Intelligent Scissors")
-    parser.add_argument("--input", type=str, default="Testbild_Gangman_300x200.png")
+    parser.add_argument("--input", type=str, default="Testbild_GangmanSketch_300x200.png")
     return parser.parse_args()
 
 
@@ -170,6 +141,3 @@ if __name__ == "__main__":
     # ------------------
 
     exercise3(image_folder=image_folder)
-
-
-
